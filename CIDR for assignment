@@ -1,0 +1,51 @@
+vpc cidr block 10.69.76.0/26
+netmask: 255.255.255.192
+first ip: 10.69.76.0
+last ip: 10.69.76.63
+
+first subnet 10.69.76.0/28
+netmask: 255.255.255.240
+range: 10.69.76.0 - 10.69.76.15
+first ip: 10.69.76.1
+last ip: 10.69.76.14
+
+
+second subnet 10.69.76.16/28 
+netmask: 255.255.255.240
+range: 10.69.76.16 - 10.69.76.31
+first ip: 10.69.77.17
+last ip: 10.69.77.30
+
+
+third subnet 10.69.76.32/28 (Private)
+netmask: 255.255.255.240
+range: 10.69.76.32 - 10.69.76.47
+first ip: 10.69.76.33
+last ip: 10.69.76.46
+
+
+
+fourth subnet 10.69.76.48/28 (Private) 
+netmask: 255.255.255.240
+range: 10.69.76.48 - 10.69.76.63
+first ip: 10.69.76.49
+last ip: 10.69.76.62
+
+
+
+
+
+Try a cidr block with 16 ip addresses available
+
+
+AWS uses 5 Ip addresses
+
+
+For the 192.168.0.32/27 CIDR block the IP addresses reserved by AWS are:
+
+    192.168.0.32, Subnetwork address.
+    192.168.0.33, reserved by AWS for VPC Router.
+    192.168.0.34, reserved by AWS for Amazon-provided DNS.
+    192.168.0.35, reserved by AWS for future use.
+    192.168.0.63, Broadcast, AWS does not support Broadcast communication inside VPC.
+
