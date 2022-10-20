@@ -62,6 +62,14 @@ Resources:
       SubnetId:
         Fn::ImportValue: !Sub PrivateSubnet2
 
+# Associate Private Subnet 3 with Private Route Table 
+  PrivateSubnet3RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable
+      SubnetId:
+        Fn::ImportValue: !Sub PrivateSubnet3        
+
 Outputs:
   NatGatewayEIP:
     Description: Elastic Ip

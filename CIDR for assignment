@@ -1,4 +1,4 @@
-vpc cidr block 10.69.76.0/26
+vpc cidr block 10.69.76.0/25
 netmask: 255.255.255.192
 first ip: 10.69.76.0
 last ip: 10.69.76.63
@@ -31,7 +31,11 @@ range: 10.69.76.48 - 10.69.76.63
 first ip: 10.69.76.49
 last ip: 10.69.76.62
 
-
+fifth subnet 10.69.76.64/28 (Private)
+netmask: 255.255.255.240
+range: 10.69.76.64 - 10.69.76.79
+first ip: 10.69.76.65
+last ip: 10.69.76.78
 
 
 
