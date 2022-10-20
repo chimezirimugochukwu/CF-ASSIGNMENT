@@ -1,0 +1,104 @@
+AWSTemplateFormatVersion: 2010-09-09
+
+Description: Creates an EC2 instance for the jump box, an EC2 instance for the WebServer and a spare EC2 insatnce.
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+    - Label:
+        default: EC2 configuration parameters
+      Parameters:
+      - JumpboxKeyPair
+      - WebappKeyPair
+      - JumpboxInstance
+      - WebserverInstance
+      - ReserveInstance
+
+Parameters:
+  JumpboxKeyPair:
+    Description: Keypair for hosts
+    Type: AWS::EC2::KeyPair::KeyName
+    Default: Jumpbox
+
+  WebappKeyPair:
+    Description: Keypair for hosts
+    Type: AWS::EC2::KeyPair::KeyName
+    Default: webapp  
+
+  JumpboxInstance:
+    Description: The instance type for Mappings
+    Type: String
+    Default: JumpBoxHost
+
+  ReserveInstance:
+    Description: The instance type for Mappings
+    Type: String
+    Default: Reservehost 
+
+  WebServerInstance:
+    Description: The instance type for Mappings
+    Type: String
+    Default: webserver    
+
+  ExportVpcStackName:
+    Description: The name of the vpc stack that exports values
+    Type: String 
+
+Mappings:
+  RegionMap:
+    eu-west-1:
+      webserver: ami-0afaca7f68748a777 #Apache Tomcat webserver by bitnami
+      jumpbox: ami-0ea0f26a6d50850c5 #Amazon linux ami for bastion host (jumpbox)
+      reservehost: ami-0ea0f26a6d50850c5 #Amazon linux ami for reserve instance
+
+Resources:
+  JumpBoxHost:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: t2.micro
+      KeyName: !Ref JumpboxKeyPair
+      ImageId: !FindInMap [RegionMap, !Ref 'AWS::Region', jumpbox]
+      SubnetId:
+        Fn::ImportValue:
+          !Sub PublicSubnet1
+      SecurityGroupIds: 
+        - Fn::ImportValue:
+           !Sub SSHSecurityGroup
+      Tags:
+        - Key: Name
+          Value: Jumpbox Instance
+
+  ReserveHost:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: t2.micro
+      KeyName: !Ref JumpboxKeyPair
+      ImageId: !FindInMap [RegionMap, !Ref 'AWS::Region', reservehost]
+      SubnetId:
+        Fn::ImportValue:
+          !Sub PublicSubnet2
+      SecurityGroupIds: 
+        - Fn::ImportValue:
+           !Sub SSHSecurityGroup
+      Tags:
+        - Key: Name
+          Value: Reserve Instance          
+
+  WebServer:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: t2.micro
+      KeyName: !Ref WebappKeyPair
+      ImageId: !FindInMap [RegionMap, !Ref 'AWS::Region', webserver] 
+      SubnetId:
+        Fn::ImportValue: !Sub PrivateSubnet1
+      SecurityGroupIds:
+        - Fn::ImportValue: !Sub WebServerSecurityGroup
+      Tags:
+        - Key: Name
+          Value: Web Server Instance
+
+
+
+#Outputs:
+

@@ -1,0 +1,70 @@
+AWSTemplateFormatVersion: 2010-09-09
+
+Description: This template creates a nat gateway in the public subnets
+
+Parameters:
+  ExportVpcStackName:
+    Description: The name of the vpc stack that exports values
+    Type: String  
+
+Resources:
+# Allocate Elastic IP Address (EIP)
+  NatGatewayEIP:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: VPC
+      Tags:
+        - Key: Name
+          Value: EIP 
+
+# Create Nat Gateway in Public Subnet 1    
+  NatGateway:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      AllocationId: !GetAtt NatGatewayEIP.AllocationId
+      SubnetId:
+        Fn::ImportValue: !Sub PublicSubnet1
+      Tags:
+        - Key: Name
+          Value: Nat Gateway Public Subnet 1
+
+# Create Private Route Table 
+  PrivateRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      Tags:
+        - Key: Name
+          Value: Private Route Table 
+      VpcId:
+        Fn::ImportValue: !Sub VPC
+
+# Add a route to point internet-bound traffic to Nat Gateway 1      
+  PrivateRoute:
+    Type: AWS::EC2::Route
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NatGateway
+      RouteTableId: !Ref PrivateRouteTable
+
+# Associate Private Subnet 1 with Private Route Table 
+  PrivateSubnet1RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable
+      SubnetId:
+        Fn::ImportValue: !Sub PrivateSubnet1
+
+# Associate Private Subnet 2 with Private Route Table 
+  PrivateSubnet2RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable
+      SubnetId:
+        Fn::ImportValue: !Sub PrivateSubnet2
+
+Outputs:
+  NatGatewayEIP:
+    Description: Elastic Ip
+    Export:
+      Name: EIP
+    Value: !Ref NatGatewayEIP
