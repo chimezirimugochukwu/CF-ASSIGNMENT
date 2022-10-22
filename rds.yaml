@@ -89,6 +89,7 @@ Parameters:
     Type: String
 
 Resources:   
+# Creates the Database Subnet Group  
   DatabaseSubnetGroup:
     Type: AWS::RDS::DBSubnetGroup
     Properties:
@@ -100,6 +101,7 @@ Resources:
         - Key: Name
           Value: database subnets
 
+# Creates the Database Instance   
   DatabaseInstance:
     Type: AWS::RDS::DBInstance
     Properties:

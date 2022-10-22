@@ -1,0 +1,514 @@
+AWSTemplateFormatVersion: 2010-09-09
+
+Description: This template creates a vpc with public and private subnets, creates a nat gateway, creates ec2 instances and creates an RDS Db
+
+Metadata: 
+  AWS::CloudFormation::Interface: 
+    ParameterGroups: 
+      - 
+        Label: 
+          default: "VPC CIDR"
+        Parameters: 
+          - VpcCIDR
+          
+      - 
+        Label: 
+          default: "Subnet CIDR"
+        Parameters: 
+          - PublicSubnet1CIDR
+          - PublicSubnet2CIDR
+          - PrivateSubnet1CIDR
+          - PrivateSubnet2CIDR
+          - PrivateSubnet3CIDR
+          
+      - 
+        Label: 
+          default: "SSH CIDR"
+        Parameters: 
+          - SSHLocation
+
+      - 
+        Label:
+          default: EC2 configuration parameters
+        Parameters:
+          - JumpboxKeyPair
+          - WebappKeyPair
+          - JumpboxInstance
+          - WebServerInstance
+          - ReserveInstance    
+
+      - 
+        Label: 
+          default: Database Parameters
+        Parameters:
+          - DatabaseInstanceIdentifier
+          - DatabaseName
+          - DatabaseUser
+          - DatabaseBackupRetentionPeriod
+          - DatabaseAllocatedStorage
+          - DatabaseInstanceClass
+          - MultiAZDatabase 
+
+Parameters:
+  VpcCIDR:
+    Default: 10.69.76.0/25
+    Description: Please enter the IP range (CIDR Notation) for this vpc
+    Type: String
+    
+  PublicSubnet1CIDR:
+    Default: 10.69.76.0/28
+    Description: Please enter the IP range (CIDR Notation) for the Public Subnet 1
+    Type: String
+    
+  PublicSubnet2CIDR:
+    Default: 10.69.76.16/28 
+    Description: Please enter the IP range (CIDR Notation) for the Public Subnet 2
+    Type: String
+    
+  PrivateSubnet1CIDR:
+    Default: 10.69.76.32/28
+    Description: Please enter the IP range (CIDR Notation) for the Private Subnet 1
+    Type: String
+    
+  PrivateSubnet2CIDR:
+    Default: 10.69.76.48/28 
+    Description: Please enter the IP range (CIDR Notation) for the Private Subnet 2
+    Type: String
+
+  PrivateSubnet3CIDR:
+    Default: 10.69.76.64/28 
+    Description: Please enter the IP range (CIDR Notation) for the Private Subnet 3
+    Type: String  
+    
+  SSHLocation:
+    AllowedPattern: '(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})/(\d{1,2})'
+    ConstraintDescription: must be a valid IP CIDR range of the form x.x.x.x/x.
+    Default: 0.0.0.0/0
+    Description: The IP address range that can be used to access the web server using SSH.
+    Type: String
+
+  JumpboxKeyPair:
+    Description: Keypair for hosts
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::KeyPair::KeyName>
+    
+
+  WebappKeyPair:
+    Description: Keypair for hosts
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::KeyPair::KeyName>
+     
+
+  JumpboxInstance:
+    Description: The instance type for Mappings
+    Type: String
+    Default: JumpBoxHost
+
+  ReserveInstance:
+    Description: The instance type for Mappings
+    Type: String
+    Default: Reservehost 
+
+  WebServerInstance:
+    Description: The instance type for Mappings
+    Type: String
+    Default: webserver    
+
+  DatabaseInstanceIdentifier:
+    Description: Instance identifier name
+    AllowedPattern: '[a-zA-Z][a-zA-Z0-9]*'
+    ConstraintDescription: Must begin with a letter and contain only alphanumeric characters
+    Default: mariadb01    
+    MaxLength: 60
+    MinLength: 1
+    Type: String
+
+  DatabaseName:
+    Description: MariaDB database name
+    AllowedPattern: '[a-zA-Z][a-zA-Z0-9]*'
+    ConstraintDescription: Must begin with a letter and contain only alphanumeric characters
+    Default: applicationdb    
+    MaxLength: 64
+    MinLength: 1
+    Type: String
+
+  DatabaseUser:
+    Description: Username for MariaDB database access
+    AllowedPattern: '[a-zA-Z][a-zA-Z0-9]*'
+    ConstraintDescription: Must begin with a letter and contain only alphanumeric characters
+    Default: dbadmin    
+    MaxLength: 16
+    MinLength: 1
+    Type: String
+
+  DatabaseBackupRetentionPeriod:
+    Description: The number of days for which automatic DB snapshots are retained
+    ConstraintDescription: Database backup retention period must be between 0 and 35 days
+    Default: 0    
+    MaxValue: 35
+    MinValue: 0
+    Type: Number
+
+  DatabaseAllocatedStorage:
+    Description: The size of the database (Gb)
+    ConstraintDescription: Must be between 5 and 1024Gb
+    Default: 20    
+    MaxValue: 65536
+    MinValue: 5
+    Type: Number
+
+  DatabaseInstanceClass:
+    Description: The database instance type
+    AllowedValues:
+      - db.t2.micro
+      - db.t3.micro      
+    ConstraintDescription: Must select a valid database instance type
+    Default: db.t2.micro    
+    Type: String
+
+  MultiAZDatabase:
+    Description: Creates a Multi-AZ MariaDB Amazon RDS database instance
+    AllowedValues:
+      - true
+      - false
+    ConstraintDescription: Must be either true or false
+    Default: false    
+    Type: String  
+
+Mappings:
+  RegionMap:
+    eu-west-1:
+      webserver: ami-0afaca7f68748a777 #Apache Tomcat webserver by bitnami
+      jumpbox: ami-0ea0f26a6d50850c5 #Amazon linux ami for bastion host (jumpbox)
+      reservehost: ami-0ea0f26a6d50850c5 #Amazon linux ami for reserve instance
+
+Resources:
+#Creates a VPC for the Network.  
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties: 
+      CidrBlock: !Ref VpcCIDR
+      EnableDnsHostnames: true
+      EnableDnsSupport: true
+      InstanceTenancy: default
+      Tags: 
+        - Key: Name
+          Value: Demo VPC
+
+# Creates an Internet Gateway.          
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+      - Key: Name
+        Value: Demo IGW
+
+ # Attaches the Internet gateway to the VPC.       
+  InternetGatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      InternetGatewayId: !Ref InternetGateway
+      VpcId: !Ref VPC
+
+# Creates a Public Subnet.      
+  PublicSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties: 
+      AvailabilityZone: !Select [ 0, !GetAZs '' ]
+      CidrBlock: !Ref PublicSubnet1CIDR
+      MapPublicIpOnLaunch: true
+      Tags: 
+        - Key: Name
+          Value: Public Subnet 1
+      VpcId: !Ref VPC
+      
+# Creates a Public Subnet.      
+  PublicSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties: 
+      AvailabilityZone: !Select [ 0, !GetAZs '' ]
+      CidrBlock: !Ref PublicSubnet2CIDR
+      MapPublicIpOnLaunch: true
+      Tags: 
+        - Key: Name
+          Value: Public Subnet 2
+      VpcId: !Ref VPC
+
+# Creates a Public Route Table.      
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      Tags:
+        - Key: Name
+          Value: Public route table
+      VpcId: !Ref VPC
+      
+# Creates a Public Route to the Internet.      
+  PublicRoute:
+    Type: AWS::EC2::Route
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+      RouteTableId: !Ref PublicRouteTable
+
+# Associate PublicSubnet 1 with Public Route Table.     
+  PublicSubnet1RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnet1
+      RouteTableId: !Ref PublicRouteTable
+      
+# Associate PublicSubnet 2 with Public Route Table.      
+  PublicSubnet2RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnet2
+      RouteTableId: !Ref PublicRouteTable
+      
+# Creates a Private Subnet.          
+  PrivateSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties: 
+      AvailabilityZone: !Select [ 1, !GetAZs '' ]
+      CidrBlock: !Ref PrivateSubnet1CIDR
+      MapPublicIpOnLaunch: false
+      Tags: 
+        - Key: Name
+          Value: Private Subnet 1 | App Tier
+      VpcId: !Ref VPC
+    
+# Creates a Private Subnet.       
+  PrivateSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties: 
+      AvailabilityZone: !Select [ 1, !GetAZs '' ]
+      CidrBlock: !Ref PrivateSubnet2CIDR
+      MapPublicIpOnLaunch: false
+      Tags: 
+        - Key: Name
+          Value: Private Subnet 2 | Database Tier
+      VpcId: !Ref VPC
+
+# Creates a Private Subnet. 
+  PrivateSubnet3:
+    Type: AWS::EC2::Subnet
+    Properties: 
+      AvailabilityZone: !Select [ 2, !GetAZs '' ]
+      CidrBlock: !Ref PrivateSubnet3CIDR
+      MapPublicIpOnLaunch: false
+      Tags: 
+        - Key: Name
+          Value: Private Subnet 3 | Database Tier
+      VpcId: !Ref VPC    
+      
+# SSH Security group for the Jumpbox.        
+  SSHSecurityGroup: 
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: SSH Security Group (Jumpbox)
+      VpcId: !Ref VPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: !Ref SSHLocation
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0          
+      Tags:
+        - Key: Name
+          Value: SSH Security Group
+
+# Security group for the Server in Private subnet 1
+  WebServerSecurityGroup: 
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Enables SSH access via port 22
+      VpcId: !Ref VPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          SourceSecurityGroupId: !Ref SSHSecurityGroup
+        - IpProtocol: icmp
+          FromPort: -1
+          ToPort: -1
+          SourceSecurityGroupId: !Ref SSHSecurityGroup  
+      Tags:
+        - Key: Name
+          Value: WebServer Security Group
+
+# Security group for the Database server in Private subnet 2          
+  DatabaseSecurityGroup: 
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Open database for access
+      VpcId: !Ref VPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 3306
+          ToPort: 3306
+          SourceSecurityGroupId: !Ref WebServerSecurityGroup
+      Tags:
+        - Key: Name
+          Value: Database Security Group
+
+# SSH Security group for the Reserve Instance.
+  ReserveSecurityGroup: 
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Reserve Instance Security Group 
+      VpcId: !Ref VPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: !Ref SSHLocation
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0 
+        - IpProtocol: icmp
+          FromPort: -1
+          ToPort: -1
+          SourceSecurityGroupId: !Ref SSHSecurityGroup            
+      Tags:
+        - Key: Name
+          Value: Reserve Security Group        
+
+# Allocate Elastic IP Address (EIP)
+  NatGatewayEIP:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: VPC
+      Tags:
+        - Key: Name
+          Value: EIP 
+
+# Create Nat Gateway in Public Subnet 1    
+  NatGateway:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      AllocationId: !GetAtt NatGatewayEIP.AllocationId
+      SubnetId:
+        !Ref PublicSubnet1
+      Tags:
+        - Key: Name
+          Value: Nat Gateway Public Subnet 1
+
+# Create Private Route Table 
+  PrivateRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      Tags:
+        - Key: Name
+          Value: Private Route Table 
+      VpcId:
+        !Ref VPC
+
+# Add a route to point internet-bound traffic to Nat Gateway 1      
+  PrivateRoute:
+    Type: AWS::EC2::Route
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NatGateway
+      RouteTableId: !Ref PrivateRouteTable
+
+# Associate Private Subnet 1 with Private Route Table 
+  PrivateSubnet1RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable
+      SubnetId:
+        !Ref PrivateSubnet1
+
+# Associate Private Subnet 2 with Private Route Table 
+  PrivateSubnet2RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable
+      SubnetId:
+        !Ref PrivateSubnet2
+
+# Associate Private Subnet 3 with Private Route Table 
+  PrivateSubnet3RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable
+      SubnetId:
+        !Ref PrivateSubnet3   
+
+# The Jumpbox EC2 instance in the Public Subnet
+  JumpBoxHost: 
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: t2.micro
+      KeyName: !Ref JumpboxKeyPair
+      ImageId: !FindInMap [RegionMap, !Ref 'AWS::Region', jumpbox]
+      SubnetId:
+        !Ref PublicSubnet1
+      SecurityGroupIds: 
+        - !Ref SSHSecurityGroup
+      Tags:
+        - Key: Name
+          Value: Jumpbox Instance
+
+# The Reserve EC2 instance in the Public Subnet
+  ReserveHost: 
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: t2.micro
+      KeyName: !Ref JumpboxKeyPair
+      ImageId: !FindInMap [RegionMap, !Ref 'AWS::Region', reservehost]
+      SubnetId:
+        !Ref PublicSubnet2
+      SecurityGroupIds: 
+        - !Ref SSHSecurityGroup
+      Tags:
+        - Key: Name
+          Value: Reserve Instance    
+
+# The Application EC2 instance in the Private Subnet
+  WebServer: 
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: t2.micro
+      KeyName: !Ref WebappKeyPair
+      ImageId: !FindInMap [RegionMap, !Ref 'AWS::Region', webserver] 
+      SubnetId:
+        !Ref PrivateSubnet1
+      SecurityGroupIds:
+        - !Ref WebServerSecurityGroup
+      Tags:
+        - Key: Name
+          Value: Web Server Instance
+
+# Creates the Database Subnet Group  
+  DatabaseSubnetGroup:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupDescription: Subnet group for RDS database
+      SubnetIds: 
+        - !Ref PrivateSubnet2 
+        - !Ref PrivateSubnet3        
+      Tags:
+        - Key: Name
+          Value: database subnets
+
+# Creates the Database Instance   
+  DatabaseInstance:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      AllocatedStorage: !Ref DatabaseAllocatedStorage
+      AvailabilityZone: !Select [ 1, !GetAZs  '' ]
+      BackupRetentionPeriod: !Ref DatabaseBackupRetentionPeriod
+      DBInstanceClass: !Ref DatabaseInstanceClass
+      DBInstanceIdentifier: !Ref DatabaseInstanceIdentifier
+      DBName: !Ref DatabaseName
+      DBSubnetGroupName: !Ref DatabaseSubnetGroup
+      Engine: MariaDB
+      EngineVersion: 10.6.5
+      MasterUsername: !Ref DatabaseUser
+      MasterUserPassword: '{{resolve:ssm-secure:RDSpass:1}}'
+      MultiAZ: !Ref MultiAZDatabase
+      VPCSecurityGroups:
+        - !Ref DatabaseSecurityGroup                                                      
