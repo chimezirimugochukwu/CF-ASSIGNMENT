@@ -17,7 +17,6 @@ Metadata:
           - DatabaseInstanceIdentifier
           - DatabaseName
           - DatabaseUser
-          - DatabasePassword
           - DatabaseBackupRetentionPeriod
           - DatabaseAllocatedStorage
           - DatabaseInstanceClass
@@ -53,16 +52,6 @@ Parameters:
     Description: Username for MariaDB database access
     MaxLength: 16
     MinLength: 1
-    Type: String
-
-  DatabasePassword:
-    AllowedPattern: '[a-zA-Z0-9]*'
-    ConstraintDescription: Must contain only alphanumeric characters
-    Default: Passw0rd
-    Description: Password for MariaDB database access
-    MaxLength: 41
-    MinLength: 8
-    NoEcho: true
     Type: String
 
   DatabaseBackupRetentionPeriod:
@@ -124,7 +113,7 @@ Resources:
       Engine: MariaDB
       EngineVersion: 10.6.5
       MasterUsername: !Ref DatabaseUser
-      MasterUserPassword: !Ref DatabasePassword
+      MasterUserPassword: '{{resolve:ssm-secure:RDSpass:1}}'
       MultiAZ: !Ref MultiAZDatabase
       VPCSecurityGroups:
         - Fn::ImportValue: !Sub DatabaseSecurityGroup
