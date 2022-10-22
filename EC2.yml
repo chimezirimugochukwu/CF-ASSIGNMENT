@@ -52,7 +52,8 @@ Mappings:
       reservehost: ami-0ea0f26a6d50850c5 #Amazon linux ami for reserve instance
 
 Resources:
-  JumpBoxHost:
+# The Jumpbox EC2 instance in the Public Subnet
+  JumpBoxHost: 
     Type: AWS::EC2::Instance
     Properties:
       InstanceType: t2.micro
@@ -68,7 +69,8 @@ Resources:
         - Key: Name
           Value: Jumpbox Instance
 
-  ReserveHost:
+# The Reserve EC2 instance in the Public Subnet
+  ReserveHost: 
     Type: AWS::EC2::Instance
     Properties:
       InstanceType: t2.micro
@@ -82,9 +84,10 @@ Resources:
            !Sub SSHSecurityGroup
       Tags:
         - Key: Name
-          Value: Reserve Instance          
+          Value: Reserve Instance    
 
-  WebServer:
+# The Application EC2 instance in the Private Subnet
+  WebServer: 
     Type: AWS::EC2::Instance
     Properties:
       InstanceType: t2.micro

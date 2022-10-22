@@ -28,64 +28,64 @@ Parameters:
     Type: String
 
   DatabaseInstanceIdentifier:
+    Description: Instance identifier name
     AllowedPattern: '[a-zA-Z][a-zA-Z0-9]*'
     ConstraintDescription: Must begin with a letter and contain only alphanumeric characters
-    Default: mariadb01 
-    Description: Instance identifier name
+    Default: mariadb01    
     MaxLength: 60
     MinLength: 1
     Type: String
 
   DatabaseName:
+    Description: MariaDB database name
     AllowedPattern: '[a-zA-Z][a-zA-Z0-9]*'
     ConstraintDescription: Must begin with a letter and contain only alphanumeric characters
-    Default: applicationdb
-    Description: MariaDB database name
+    Default: applicationdb    
     MaxLength: 64
     MinLength: 1
     Type: String
 
   DatabaseUser:
+    Description: Username for MariaDB database access
     AllowedPattern: '[a-zA-Z][a-zA-Z0-9]*'
     ConstraintDescription: Must begin with a letter and contain only alphanumeric characters
-    Default: dbadmin
-    Description: Username for MariaDB database access
+    Default: dbadmin    
     MaxLength: 16
     MinLength: 1
     Type: String
 
   DatabaseBackupRetentionPeriod:
-    ConstraintDescription: Database backup retention period must be between 0 and 35 days
-    Default: 0
     Description: The number of days for which automatic DB snapshots are retained
+    ConstraintDescription: Database backup retention period must be between 0 and 35 days
+    Default: 0    
     MaxValue: 35
     MinValue: 0
     Type: Number
 
   DatabaseAllocatedStorage:
-    ConstraintDescription: Must be between 5 and 1024Gb
-    Default: 20
     Description: The size of the database (Gb)
+    ConstraintDescription: Must be between 5 and 1024Gb
+    Default: 20    
     MaxValue: 65536
     MinValue: 5
     Type: Number
 
   DatabaseInstanceClass:
+    Description: The database instance type
     AllowedValues:
       - db.t2.micro
       - db.t3.micro      
     ConstraintDescription: Must select a valid database instance type
-    Default: db.t2.micro
-    Description: The database instance type
+    Default: db.t2.micro    
     Type: String
 
   MultiAZDatabase:
+    Description: Creates a Multi-AZ MariaDB Amazon RDS database instance
     AllowedValues:
       - true
       - false
     ConstraintDescription: Must be either true or false
-    Default: false
-    Description: Creates a Multi-AZ MariaDB Amazon RDS database instance
+    Default: false    
     Type: String
 
 Resources:   

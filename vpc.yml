@@ -69,6 +69,7 @@ Parameters:
     Type: String
 
 Resources:
+#Creates a VPC for the Network.  
   VPC:
     Type: AWS::EC2::VPC
     Properties: 
@@ -79,20 +80,23 @@ Resources:
       Tags: 
         - Key: Name
           Value: Demo VPC
-          
+
+# Creates an Internet Gateway.          
   InternetGateway:
     Type: AWS::EC2::InternetGateway
     Properties:
       Tags:
       - Key: Name
         Value: Demo IGW
-        
+
+ # Attaches the Internet gateway to the VPC.       
   InternetGatewayAttachment:
     Type: AWS::EC2::VPCGatewayAttachment
     Properties:
       InternetGatewayId: !Ref InternetGateway
       VpcId: !Ref VPC
-      
+
+# Creates a Public Subnet.      
   PublicSubnet1:
     Type: AWS::EC2::Subnet
     Properties: 
@@ -104,6 +108,7 @@ Resources:
           Value: Public Subnet 1
       VpcId: !Ref VPC
       
+# Creates a Public Subnet.      
   PublicSubnet2:
     Type: AWS::EC2::Subnet
     Properties: 
@@ -114,7 +119,8 @@ Resources:
         - Key: Name
           Value: Public Subnet 2
       VpcId: !Ref VPC
-      
+
+# Creates a Public Route Table.      
   PublicRouteTable:
     Type: AWS::EC2::RouteTable
     Properties:
@@ -123,26 +129,29 @@ Resources:
           Value: Public route table
       VpcId: !Ref VPC
       
+# Creates a Public Route to the Internet.      
   PublicRoute:
     Type: AWS::EC2::Route
     Properties:
       DestinationCidrBlock: 0.0.0.0/0
       GatewayId: !Ref InternetGateway
       RouteTableId: !Ref PublicRouteTable
-      
+
+# Associate PublicSubnet 1 with Public Route Table.     
   PublicSubnet1RouteTableAssociation:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
       SubnetId: !Ref PublicSubnet1
       RouteTableId: !Ref PublicRouteTable
       
+# Associate PublicSubnet 2 with Public Route Table.      
   PublicSubnet2RouteTableAssociation:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
       SubnetId: !Ref PublicSubnet2
       RouteTableId: !Ref PublicRouteTable
       
-          
+# Creates a Private Subnet.          
   PrivateSubnet1:
     Type: AWS::EC2::Subnet
     Properties: 
@@ -153,7 +162,8 @@ Resources:
         - Key: Name
           Value: Private Subnet 1 | App Tier
       VpcId: !Ref VPC
-      
+    
+# Creates a Private Subnet.       
   PrivateSubnet2:
     Type: AWS::EC2::Subnet
     Properties: 
@@ -165,6 +175,7 @@ Resources:
           Value: Private Subnet 2 | Database Tier
       VpcId: !Ref VPC
 
+# Creates a Private Subnet. 
   PrivateSubnet3:
     Type: AWS::EC2::Subnet
     Properties: 
@@ -176,8 +187,8 @@ Resources:
           Value: Private Subnet 3 | Database Tier
       VpcId: !Ref VPC    
       
-        
-  SSHSecurityGroup: #SSH Security group for the Jumpbox.
+# SSH Security group for the Jumpbox.        
+  SSHSecurityGroup: 
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription: SSH Security Group (Jumpbox)
@@ -195,7 +206,8 @@ Resources:
         - Key: Name
           Value: SSH Security Group
 
-  WebServerSecurityGroup: #Security group for the Server in Private subnet 1
+# Security group for the Server in Private subnet 1
+  WebServerSecurityGroup: 
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription: Enables SSH access via port 22
@@ -212,8 +224,9 @@ Resources:
       Tags:
         - Key: Name
           Value: WebServer Security Group
-          
-  DatabaseSecurityGroup: #Security group for the Database server in Private subnet 2
+
+# Security group for the Database server in Private subnet 2          
+  DatabaseSecurityGroup: 
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription: Open database for access
@@ -227,7 +240,8 @@ Resources:
         - Key: Name
           Value: Database Security Group
 
-  ReserveSecurityGroup: #SSH Security group for the Reserve Instance.
+# SSH Security group for the Reserve Instance.
+  ReserveSecurityGroup: 
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription: Reserve Instance Security Group 
@@ -288,8 +302,7 @@ Outputs: #This allows other stacks to reference the outputs from this stack
     Export:
       Name: PrivateSubnet3
     Value: !Ref PrivateSubnet3 
-    
-      
+        
   SSHSecurityGroup:
     Description: SSH Security Group ID
     Export:
