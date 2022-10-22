@@ -11,19 +11,19 @@ Metadata:
       - JumpboxKeyPair
       - WebappKeyPair
       - JumpboxInstance
-      - WebserverInstance
+      - WebServerInstance
       - ReserveInstance
 
 Parameters:
   JumpboxKeyPair:
     Description: Keypair for hosts
-    Type: AWS::EC2::KeyPair::KeyName
-    Default: Jumpbox
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::KeyPair::KeyName>
+    
 
   WebappKeyPair:
     Description: Keypair for hosts
-    Type: AWS::EC2::KeyPair::KeyName
-    Default: webapp  
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::KeyPair::KeyName>
+     
 
   JumpboxInstance:
     Description: The instance type for Mappings
