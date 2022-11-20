@@ -1,7 +1,7 @@
 vpc cidr block 10.69.76.0/25
-netmask: 255.255.255.192
+netmask: 255.255.255.128
 first ip: 10.69.76.0
-last ip: 10.69.76.63
+last ip: 10.69.76.127
 
 first subnet 10.69.76.0/28
 netmask: 255.255.255.240
